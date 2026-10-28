@@ -1,0 +1,148 @@
+spring:
+  application:
+    name: testyourluck
+  profiles:
+    default: production
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:testyourluck}
+    username: ${DB_USER:tyl}
+    password: ${DB_PASSWORD:tyl}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  jackson:
+    time-zone: UTC
+  servlet:
+    multipart:
+      max-file-size: 6MB
+      max-request-size: 7MB
+
+server:
+  port: ${SERVER_PORT:9090}
+  error:
+    include-message: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  public-base-url: ${PUBLIC_BASE_URL:http://localhost:9090}
+  storage:
+    dir: ${STORAGE_DIR:./storage}
+  webhooks:
+    allow-insecure-targets: false
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4000}
+  security:
+    jwt:
+      # Sem valor padrão: production e stage exigem JWT_SECRET (base64, mínimo 256 bits).
+      secret: ${JWT_SECRET}
+      expiration-minutes: ${JWT_EXPIRATION_MINUTES:720}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+---
+spring:
+  config:
+    activate:
+      on-profile: production
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+logging:
+  level:
+    root: INFO
+
+---
+spring:
+  config:
+    activate:
+      on-profile: stage
+
+logging:
+  level:
+    root: INFO
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  jpa:
+    generate-ddl: false
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        show_sql: false
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        connection:
+          handling_mode: DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION
+  devtools:
+    restart:
+      enabled: false
+  output:
+    ansi:
+      enabled: ALWAYS
+
+app:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:dGVzdHlvdXJsdWNrLWRldi1zZWNyZXQtY2hhbmdlLW1lLXBsZWFzZS0yMDI2IQ==}
+
+logging:
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm}){faint} | %highlight(%-5level) | %clr(%-24logger{2}){cyan}: %msg%n"
+  level:
+    org.apache.pulsar: OFF
+    org.apache.pulsar.client: OFF
+    org.springframework.data.repository.config.RepositoryConfigurationExtensionSupport: WARN
+
+---
+# Usado pela suíte automatizada (@ActiveProfiles("test")): banco testyourluck_test e Redis database 1.
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_TEST_NAME:testyourluck_test}
+  data:
+    redis:
+      database: 1
+
+app:
+  storage:
+    dir: build/test-storage
+  webhooks:
+    allow-insecure-targets: true
+  security:
+    jwt:
+      secret: dGVzdHlvdXJsdWNrLWRldi1zZWNyZXQtY2hhbmdlLW1lLXBsZWFzZS0yMDI2IQ==
+
+logging:
+  level:
+    com.doulgs.testyourluck: INFO
